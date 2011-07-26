@@ -24,12 +24,15 @@
   (let [number-of-attributes (if class-attribute
                                (dec (count attributes))
                                (count attributes))
-        instance (new Instance number-of-attributes)]
+        instance (new Instance (if class-attribute
+                                 (inc number-of-attributes)
+                                 number-of-attributes))]
     (loop [i 0]
       (if (<= number-of-attributes i)
-        (do (if classifications
-              (. instance setValue #^Attribute class-attribute #^String (nth classifications row)))
-            instance)
+        (do
+          (if classifications
+            (. instance setValue #^Attribute class-attribute #^String (nth classifications row)))
+          instance)
         (do
           (. instance setValue #^Attribute (nth attributes i)
              #^Double (get-value data-set i row))
@@ -46,11 +49,11 @@
   (let [number-of-attributes (count (:attributes data-set))
         class-attribute (create-classification-values (:classifications data-set))
         attributes (vec (loop [i 0
-                               attributes (if class-attribute
-                                            (list class-attribute)
-                                            '())]
+                               attributes '()]
                           (if (<= number-of-attributes i)
-                            (reverse attributes)
+                            (reverse (if class-attribute
+                                       (cons class-attribute attributes)
+                                       attributes))
                             (recur
                              (inc i)
                              (cons (create-attribute data-set i) attributes)))))
