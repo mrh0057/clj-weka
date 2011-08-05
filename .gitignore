@@ -20,3 +20,4 @@ salesup-min.js
 *.log*
 *.swp
 my-compress-file
+*.model

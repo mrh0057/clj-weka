@@ -47,6 +47,9 @@
     (is (true-negative-rate evaluation "g"))
     (is (true-positive-rate evaluation "g"))
     (is (unclassified evaluation))
-    (println (to-class-details-string evaluation))))
-
-
+    (println (to-class-details-string evaluation))
+    (save-classifier classifier "my-file.model")
+    (println classifier)
+    (println (load-classifier "my-file.model"))
+    (println (build-classifer classifier data-set)))
+)

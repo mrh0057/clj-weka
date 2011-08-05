@@ -4,6 +4,9 @@
 
 (set! *warn-on-reflection* true)
 
+(defprotocol ConvertableDataSet
+  (convert-data-set [this]))
+
 (defn- whole-number? [val]
   (= (mod val 1) 0))
 
@@ -44,28 +47,30 @@
       (. fast-vec addElement val))
     fast-vec))
 
-(defn convert-data-set [data-set]
-  "Used to convert a data set to weka's Instance Format"
-  (let [number-of-attributes (count (:attributes data-set))
-        class-attribute (create-classification-values (:classifications data-set))
-        attributes (vec (loop [i 0
-                               attributes '()]
-                          (if (<= number-of-attributes i)
-                            (reverse (if class-attribute
-                                       (cons class-attribute attributes)
-                                       attributes))
-                            (recur
-                             (inc i)
-                             (cons (create-attribute data-set i) attributes)))))
-        number-of-rows (count-rows data-set)
-        instances (doto (new Instances #^String (:name data-set)
-                        #^FastVector (seq-to-fast-vec attributes)
-                        #^Integer number-of-rows)
-                    (. setClass class-attribute))]
-    (loop [i 0]
-      (if (<= number-of-rows i)
-        instances
-        (do
-          (. instances add (doto (create-instance data-set  attributes i class-attribute (:classifications data-set))))
-          (recur
-           (inc i)))))))
+(extend-type clj_data.core.DataSet
+  ConvertableDataSet
+  (convert-data-set [data-set]
+    "Used to convert a data set to weka's Instance Format"
+    (let [number-of-attributes (count (:attributes data-set))
+          class-attribute (create-classification-values (:classifications data-set))
+          attributes (vec (loop [i 0
+                                 attributes '()]
+                            (if (<= number-of-attributes i)
+                              (reverse (if class-attribute
+                                         (cons class-attribute attributes)
+                                         attributes))
+                              (recur
+                               (inc i)
+                               (cons (create-attribute data-set i) attributes)))))
+          number-of-rows (count-rows data-set)
+          instances (doto (new Instances #^String (:name data-set)
+                               #^FastVector (seq-to-fast-vec attributes)
+                               #^Integer number-of-rows)
+                      (. setClass class-attribute))]
+      (loop [i 0]
+        (if (<= number-of-rows i)
+          instances
+          (do
+            (. instances add (doto (create-instance data-set  attributes i class-attribute (:classifications data-set))))
+            (recur
+             (inc i))))))))

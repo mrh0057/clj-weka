@@ -2,11 +2,14 @@
   (:use clj-weka.data)
   (:import [weka.classifiers Evaluation Classifier]
            [weka.core Instances Attribute]
-           [java.util Random Date]))
+           [java.util Random Date]
+           [java.io ObjectOutputStream FileOutputStream ObjectInputStream FileInputStream]))
 
 
 (defprotocol ClassifierProtocol
-  (cross-validation [classifier data-set folds]))
+  (cross-validation [classifier data-set folds])
+  (build-classifer [classifier data-set])
+  (save-classifier [classifier file]))
 
 (defrecord EvaluationRecord [evaluation
                              classes])
@@ -110,4 +113,19 @@
       (new EvaluationRecord (doto evaluation
                               (. crossValidateModel #^Classifier classifier #^Instances instances #^Integer folds #^Random (new Random (. (new Date) getTime ))
                                  (into-array [])))
-           (. instances classAttribute)))))
+           (. instances classAttribute))))
+  (save-classifier [classifier file]
+    (doto (new ObjectOutputStream (new FileOutputStream file))
+      (. writeObject classifier)
+      (. flush)
+      (. close)))
+  (build-classifer [classifier data-set]
+    (let [instances (convert-data-set data-set)]
+      (. classifier buildClassifier instances)
+      classifier)))
+
+(defn load-classifier [path]
+  (let [object-stream (new ObjectInputStream (new FileInputStream path))
+        classifier (. object-stream readObject)]
+    (. object-stream close)
+    classifier))
