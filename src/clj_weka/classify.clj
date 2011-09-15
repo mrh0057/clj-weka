@@ -3,13 +3,30 @@
   (:import [weka.classifiers Evaluation Classifier]
            [weka.core Instances Attribute]
            [java.util Random Date]
-           [java.io ObjectOutputStream FileOutputStream ObjectInputStream FileInputStream]))
+           [java.io ObjectOutputStream FileOutputStream ObjectInputStream FileInputStream])
+  (:require [clojure.contrib.string :as str-utils] ))
+
+(defn parse-options
+  "Used to parse options to fead into weka.
+
+options - The options to parse.
+
+returns - an string array in weka's format."
+  [options]
+  (into-array String (map #(str "-" (str-utils/drop 1 (if (vector? %)
+                                                        (str (first %)
+                                                             (if (second %)
+                                                               (str " " (second %))))
+                                                      (str %) ))) options)))
 
 
 (defprotocol ClassifierProtocol
   (cross-validation [classifier data-set folds])
   (build-classifer [classifier data-set])
-  (save-classifier [classifier file]))
+  (save-classifier [classifier file])
+  (set-options [classifier options]
+    "Used to set the options for a classifier.  EX.
+[:D [:M MyOptionArgs]]"))
 
 (defrecord EvaluationRecord [evaluation
                              classes])
@@ -53,7 +70,7 @@
   (to-class-details-string [this])
   (to-cumulative-margin-distribution-string [this])
   (to-matrix-string [this])
-  (to-summary-string [this])
+  (to-summary-string [this] [this complexity-stats])
   (total-cost [this])
   (true-negative-rate [this classification])
   (true-positive-rate [this classification])
@@ -98,7 +115,8 @@
   (sf-mean-scheme-entropy [this] (. #^Evaluation (:evaluation this) SFMeanSchemeEntropy))
   (to-class-details-string [this] (. #^Evaluation (:evaluation this) toClassDetailsString))
   (to-matrix-string [this] (. #^Evaluation (:evaluation this) toMatrixString))
-  (to-summary-string [this] (. #^Evaluation (:evaluation this) toSummaryString))
+  (to-summary-string ([this] (. #^Evaluation (:evaluation this) toSummaryString))
+    ([this complexity-stats] (. #^Evaluation (:evaluation this) toSummaryString "==Complexity==" complexity-stats)))
   (total-cost [this] (. #^Evaluation (:evaluation this) totalCost))
   (true-negative-rate [this classification] (. #^Evaluation (:evaluation this) truePositiveRate (get-classification-position this classification)))
   (true-positive-rate [this classification] (. #^Evaluation (:evaluation this) trueNegativeRate (get-classification-position this classification)))
@@ -122,7 +140,9 @@
   (build-classifer [classifier data-set]
     (let [instances (convert-data-set data-set)]
       (. classifier buildClassifier instances)
-      classifier)))
+      classifier))
+  (set-options [classifier options]
+    (. classifier setOptions (parse-options options))))
 
 (defn load-classifier [path]
   (let [object-stream (new ObjectInputStream (new FileInputStream path))
