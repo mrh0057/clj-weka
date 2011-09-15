@@ -16,7 +16,9 @@
     (is (= (aget val 1) "-W")))
   (let [val (parse-options [[:D "Hello"] :W])]
     (is (= (aget val 0) "-D Hello"))
-    (is (= (aget val 1) "-W"))))
+    (is (= (aget val 1) "-W")))
+  (let [val (parse-options [[:D 1] :W])]
+    (is (= (aget val 0) "-D 1"))))
 
 (deftest NaiveBayesTest
   (let [matrix [[1.4 2 3 5 6] [4.3 5 6 5 6] [7 8 9 8 9] [10 11 12 10 11] [10 11 12 10 11] [10 11 12 10 11] [10 11 12 10 11]]
