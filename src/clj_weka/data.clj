@@ -5,7 +5,13 @@
 (set! *warn-on-reflection* true)
 
 (defprotocol ConvertableDataSet
-  (convert-data-set [this]))
+  (convert-data-set [this]
+    "Used to convert the data to weka Instance and Instances.")
+  (classifications-of-data-set [this]
+    "Used to get the classification of the data set.
+
+this - The data set to get the classifications from
+returns - A list of classifications from the data-set sorted."))
 
 (defn- whole-number? [val]
   (= (mod val 1) 0))
@@ -16,9 +22,9 @@
       (. attribute-values addElement  val))
     attribute-values))
 
-(defn- create-classification-values [classifications]
-  (if classifications
-    (new Attribute "class" #^FastVector (create-attribute-values (distinct classifications)))))
+(defn- create-classification-values [data-set]
+  (if (:classifications data-set)
+    (new Attribute "class" #^FastVector (create-attribute-values (classifications-of-data-set data-set)))))
 
 (defn create-attribute [data-set position]
   (new Attribute (get (:attributes data-set) position)))
@@ -50,9 +56,8 @@
 (extend-type clj_data.core.DataSet
   ConvertableDataSet
   (convert-data-set [data-set]
-    "Used to convert a data set to weka's Instance Format"
     (let [number-of-attributes (count (:attributes data-set))
-          class-attribute (create-classification-values (:classifications data-set))
+          class-attribute (create-classification-values data-set)
           attributes (vec (loop [i 0
                                  attributes '()]
                             (if (<= number-of-attributes i)
@@ -73,4 +78,6 @@
           (do
             (. instances add (doto (create-instance data-set  attributes i class-attribute (:classifications data-set))))
             (recur
-             (inc i))))))))
+             (inc i)))))))
+  (classifications-of-data-set [this]
+    (sort (distinct (:classifications this)))))

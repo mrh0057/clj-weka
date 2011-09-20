@@ -19,14 +19,55 @@ returns - an string array in weka's format."
                                                                (str " " (second %))))
                                                       (str %) ))) options)))
 
+(defn find-max-position [vals]
+  (first (reduce (fn [max val]
+                   (if (> (second val) (second max))
+                     val
+                     max)) (map vector (range 0 (count vals)) vals))))
+
+(defn- find-classification-position-by-distribution [^Classifier classifier ^Instance instance]
+  (find-max-position (. classifier distributionForInstance instance)))
+
+(defn classify-by-distribution
+  "Used to classify a data-set by the distribution.
+
+classifier - The classifier to run.
+data-set - The data-set to run the classifier on. It must be convertable.
+returns - A vector of classification for the data-set."
+  [^Classifier classifier data-set]
+  (let [instances (convert-data-set data-set)
+        class-name (fn [idx]
+                     (. (. instances classAttribute) value idx))]
+    (map (fn [idx] 
+           (class-name (find-classification-position-by-distribution classifier
+                                                                     (. instances instance idx))))
+         (range 0 (. instances numInstances)))))
+
+(defn classify-by-classify-instance
+  "Used to classify a data-set by the classifyInstance function in weka
+
+classifier - The classifier to run it on.
+data-set - The data-set to run the classifier on.
+
+return A data-set with the classificatiosn set."
+  [^Classifier classifier data-set]
+  (let [instances (convert-data-set data-set)]
+    (map (fn [idx]
+           (let [instance (. instances instance idx)]
+             (. instance setClassValue (. classifier classifyInstance instance))
+             (. instance stringValue (. instance classIndex))))
+         (range 0 (. instances numInstances)))))
 
 (defprotocol ClassifierProtocol
   (cross-validation [classifier data-set folds])
   (build-classifer [classifier data-set])
   (save-classifier [classifier file])
   (set-options [classifier options]
-    "Used to set the options for a classifier.  EX.
-[:D [:M MyOptionArgs]]"))
+    "Used to set the options for a classifier.  EX. [:D [:M MyOptionArgs]]")
+  (classify [classifier data-set]
+    "Used to find the classifications for a data-set.
+
+returns - The data-set with the classification set."))
 
 (defrecord EvaluationRecord [evaluation
                              classes])
@@ -120,8 +161,7 @@ returns - an string array in weka's format."
   (total-cost [this] (. #^Evaluation (:evaluation this) totalCost))
   (true-negative-rate [this classification] (. #^Evaluation (:evaluation this) truePositiveRate (get-classification-position this classification)))
   (true-positive-rate [this classification] (. #^Evaluation (:evaluation this) trueNegativeRate (get-classification-position this classification)))
-  (unclassified [this] (. #^Evaluation (:evaluation this) unclassified))
-)
+  (unclassified [this] (. #^Evaluation (:evaluation this) unclassified)))
 
 (extend-type Classifier
   ClassifierProtocol
@@ -142,7 +182,9 @@ returns - an string array in weka's format."
       (. classifier buildClassifier instances)
       classifier))
   (set-options [classifier options]
-    (. classifier setOptions (parse-options options))))
+    (. classifier setOptions (parse-options options)))
+  (classify [classifier data-set]
+    (classify-by-classify-instance classifier data-set)))
 
 (defn load-classifier [path]
   (let [object-stream (new ObjectInputStream (new FileInputStream path))
