@@ -9,9 +9,10 @@
 (defn parse-options
   "Used to parse options to fead into weka.
 
-options - The options to parse.
-
-returns - an string array in weka's format."
+*options*
+  The options to parse.   
+*returns*
+  an string array in weka's format."
   [options]
   (into-array String (map #(str "-" (str-utils/drop 1 (if (vector? %)
                                                         (str (first %)
@@ -31,9 +32,12 @@ returns - an string array in weka's format."
 (defn classify-by-distribution
   "Used to classify a data-set by the distribution.
 
-classifier - The classifier to run.
-data-set - The data-set to run the classifier on. It must be convertable.
-returns - A vector of classification for the data-set."
+*classifier*
+  The classifier to run.   
+*data-set*
+  The data-set to run the classifier on. It must be convertable.   
+*returns*
+  A vector of classification for the data-set."
   [^Classifier classifier data-set]
   (let [instances (convert-data-set data-set)
         class-name (fn [idx]
@@ -46,10 +50,12 @@ returns - A vector of classification for the data-set."
 (defn classify-by-classify-instance
   "Used to classify a data-set by the classifyInstance function in weka
 
-classifier - The classifier to run it on.
-data-set - The data-set to run the classifier on.
-
-return A data-set with the classificatiosn set."
+*classifier*
+  The classifier to run it on.   
+*data-set*
+  The data-set to run the classifier on.   
+*return*
+   A data-set with the classificatiosn set."
   [^Classifier classifier data-set]
   (let [instances (convert-data-set data-set)]
     (map (fn [idx]

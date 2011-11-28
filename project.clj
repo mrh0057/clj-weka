@@ -7,4 +7,5 @@
                  [midje "1.1.1" :exclusions [org.clojure/clojure
                                              org.clojure.contrib/core]]]
   :dev-dependencies [[lein-midje "1.0.3"]
+                     [lein-marginalia "0.6.0"]
                      [swank-clojure "1.3.1"]])
