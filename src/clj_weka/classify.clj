@@ -14,11 +14,13 @@
 *returns*
   an string array in weka's format."
   [options]
-  (into-array String (map #(str "-" (str-utils/drop 1 (if (vector? %)
-                                                        (str (first %)
-                                                             (if (second %)
-                                                               (str " " (second %))))
-                                                      (str %) ))) options)))
+  (into-array String (reverse
+                      (reduce (fn [options option]
+                                (if (vector? option)
+                                  (cons (str (second option))
+                                        (cons (str "-" (name (first option))) options))
+                                  (cons (str "-" (name option)) options)))
+                              '()  options))))
 
 (defn find-max-position [vals]
   (first (reduce (fn [max val]
@@ -66,7 +68,7 @@
 
 (defprotocol ClassifierProtocol
   (cross-validation [classifier data-set folds])
-  (build-classifer [classifier data-set])
+  (build-classifier [classifier data-set])
   (save-classifier [classifier file])
   (set-options [classifier options]
     "Used to set the options for a classifier.  EX. [:D [:M MyOptionArgs]]")
@@ -183,7 +185,7 @@ returns - The data-set with the classification set."))
       (. writeObject classifier)
       (. flush)
       (. close)))
-  (build-classifer [classifier data-set]
+  (build-classifier [classifier data-set]
     (let [instances (convert-data-set data-set)]
       (. classifier buildClassifier instances)
       classifier))

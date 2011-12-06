@@ -11,15 +11,18 @@
 (deftest parse-options-test
   (let [val (parse-options [:D [:M "MyOpt"]])]
     (is (= (aget val 0) "-D"))
-    (is (= (aget val 1) "-M MyOpt")))
+    (is (= (aget val 1) "-M"))
+    (is (= (aget val 2) "MyOpt")))
   (let [val (parse-options [:D :W])]
     (is (= (aget val 0) "-D"))
     (is (= (aget val 1) "-W")))
   (let [val (parse-options [[:D "Hello"] :W])]
-    (is (= (aget val 0) "-D Hello"))
-    (is (= (aget val 1) "-W")))
+    (is (= (aget val 0) "-D"))
+    (is (= (aget val 1) "Hello"))
+    (is (= (aget val 2) "-W")))
   (let [val (parse-options [[:D 1] :W])]
-    (is (= (aget val 0) "-D 1"))))
+    (is (= (aget val 0) "-D"))
+    (is (= (aget val 1) "1"))))
 
 (deftest find-max-position-test
   (is (= (find-max-position [0 1 2 3 4 5 0]) 5)))
@@ -30,11 +33,11 @@
         classifier (new NaiveBayes)
         j48 (new J48)
         params-test (doto (new LogitBoost)
-                      (set-options [[:W weka.classifiers.trees.DecisionStump]]))
+                      (set-options [[:W "weka.classifiers.trees.DecisionStump"]]))
         evaluation (cross-validation classifier data-set 2)
         params-evaluation (cross-validation params-test data-set 2)]
-    (build-classifer classifier data-set)
-    (build-classifer j48 data-set)
+    (build-classifier classifier data-set)
+    (build-classifier j48 data-set)
     (println (to-summary-string params-evaluation))
     (println (classify-by-distribution classifier data-set))
     (is (= (classify classifier data-set) '("g" "h" "h" "g" "g" "g" "g")))
